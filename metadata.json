@@ -1,0 +1,6 @@
+{
+  "name": "Crop Disease Prediction",
+  "description": "Smart agricultural diagnostic tool for detecting crop leaf diseases, severity assessment, and treatment recommendations.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
