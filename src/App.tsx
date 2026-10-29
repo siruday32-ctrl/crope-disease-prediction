@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Header, ActiveTab } from './components/Header';
+import { HomePage } from './components/HomePage';
+import { AboutSection } from './components/AboutSection';
+import { Footer } from './components/Footer';
+import { AgronomistConsultModal } from './components/AgronomistConsultModal';
 import { ImageUploader } from './components/ImageUploader';
 import { PredictionResultCard } from './components/PredictionResultCard';
 import { DiseaseCatalog } from './components/DiseaseCatalog';
@@ -9,15 +13,16 @@ import { DosageCalculator } from './components/DosageCalculator';
 import { DiagnosisHistory } from './components/DiagnosisHistory';
 import { PredictionResult, CropType } from './types';
 import { analyzeLeafImage, buildDiagnosisFromCatalog } from './utils/imageClassifier';
-import { Sprout, ShieldCheck, AlertCircle, CloudLightning, ArrowRight, Sparkles } from 'lucide-react';
+import { Sprout, AlertCircle, CloudLightning, ArrowRight, Sparkles } from 'lucide-react';
 
 const STORAGE_KEY = 'crop_disease_scans_history';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('scanner');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [currentPrediction, setCurrentPrediction] = useState<PredictionResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isConsultModalOpen, setIsConsultModalOpen] = useState<boolean>(false);
   const [historyRecords, setHistoryRecords] = useState<PredictionResult[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -37,6 +42,13 @@ export function App() {
     }
   }, [historyRecords]);
 
+  // Scroll to top on tab change
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    setErrorMessage(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleAnalyze = async (
     imageSrc: string,
     cropHint?: CropType,
@@ -48,6 +60,7 @@ export function App() {
       const result = await analyzeLeafImage(imageSrc, cropHint, userDescription);
       setCurrentPrediction(result);
       setActiveTab('scanner');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       console.error('Diagnosis error:', err);
       setErrorMessage(
@@ -64,6 +77,7 @@ export function App() {
     if (result) {
       setCurrentPrediction(result);
       setActiveTab('scanner');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -87,41 +101,54 @@ export function App() {
   const handleSelectFromHistory = (record: PredictionResult) => {
     setCurrentPrediction(record);
     setActiveTab('scanner');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectDiseaseFromCatalog = (imageSrc: string, crop: CropType) => {
     handleAnalyze(imageSrc, crop);
   };
 
+  const handleQuickScanCrop = (crop: CropType) => {
+    setActiveTab('scanner');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-900">
       <Header
         activeTab={activeTab}
-        onTabChange={(tab) => {
-          setActiveTab(tab);
-          setErrorMessage(null);
-        }}
+        onTabChange={handleTabChange}
         historyCount={historyRecords.length}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900 flex items-center justify-between shadow-[0_4px_0_0_#fcd34d] animate-pop-bounce">
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex items-center justify-between shadow-[0_4px_0_0_#fcd34d] animate-pop-bounce">
             <div className="flex items-center gap-3">
               <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 animate-bounce" />
               <span className="text-sm font-bold">{errorMessage}</span>
             </div>
             <button
               onClick={() => setErrorMessage(null)}
-              className="text-xs font-black px-3 py-1.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 transition-all bouncy-pill border border-amber-400"
+              className="text-xs font-black px-3 py-1.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 transition-all bouncy-pill border border-amber-400 cursor-pointer"
             >
               Dismiss
             </button>
           </div>
         )}
 
+        {/* Website Home Section */}
+        {activeTab === 'home' && (
+          <HomePage
+            onNavigate={handleTabChange}
+            onQuickScanCrop={handleQuickScanCrop}
+            onOpenConsultation={() => setIsConsultModalOpen(true)}
+          />
+        )}
+
+        {/* Leaf Scanner Tab */}
         {activeTab === 'scanner' && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-pop-bounce">
             {/* Intro Bouncy Banner */}
             <div className="rounded-3xl p-6 sm:p-8 relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-700 to-green-800 border-3 border-emerald-900 text-white shadow-[0_8px_0_0_#064e3b] transition-transform duration-300 hover:-translate-y-1">
               <div className="relative z-10 max-w-2xl">
@@ -159,7 +186,7 @@ export function App() {
                 </div>
               </div>
               <button
-                onClick={() => setActiveTab('weather_change')}
+                onClick={() => handleTabChange('weather_change')}
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-yellow-400 hover:bg-yellow-300 text-blue-950 text-xs sm:text-sm font-black rounded-2xl shrink-0 transition-all border-2 border-yellow-500 shadow-[0_4px_0_0_#ca8a04] hover:-translate-y-0.5 active:translate-y-1 active:shadow-none cursor-pointer"
               >
                 <span>Predict by Weather Shift</span>
@@ -186,43 +213,69 @@ export function App() {
           </div>
         )}
 
-        {activeTab === 'weather_change' && <WeatherDiseasePredictor />}
-
-        {activeTab === 'catalog' && (
-          <DiseaseCatalog onSelectDiseaseForScan={handleSelectDiseaseFromCatalog} />
+        {/* Weather Disease Predictor Tab */}
+        {activeTab === 'weather_change' && (
+          <div className="animate-pop-bounce">
+            <WeatherDiseasePredictor />
+          </div>
         )}
 
-        {activeTab === 'weather' && <WeatherRiskCalculator />}
+        {/* Disease Catalog Tab */}
+        {activeTab === 'catalog' && (
+          <div className="animate-pop-bounce">
+            <DiseaseCatalog onSelectDiseaseForScan={handleSelectDiseaseFromCatalog} />
+          </div>
+        )}
 
-        {activeTab === 'dosage' && <DosageCalculator />}
+        {/* Microclimate Tab */}
+        {activeTab === 'weather' && (
+          <div className="animate-pop-bounce">
+            <WeatherRiskCalculator />
+          </div>
+        )}
 
+        {/* Dosage Calculator Tab */}
+        {activeTab === 'dosage' && (
+          <div className="animate-pop-bounce">
+            <DosageCalculator />
+          </div>
+        )}
+
+        {/* About & Science Tab */}
+        {activeTab === 'about' && (
+          <div className="animate-pop-bounce">
+            <AboutSection />
+          </div>
+        )}
+
+        {/* Scan History Tab */}
         {activeTab === 'history' && (
-          <DiagnosisHistory
-            records={historyRecords}
-            onSelectRecord={handleSelectFromHistory}
-            onDeleteRecord={handleDeleteRecord}
-            onClearAll={handleClearHistory}
-          />
+          <div className="animate-pop-bounce">
+            <DiagnosisHistory
+              records={historyRecords}
+              onSelectRecord={handleSelectFromHistory}
+              onDeleteRecord={handleDeleteRecord}
+              onClearAll={handleClearHistory}
+            />
+          </div>
         )}
       </main>
 
-      {/* Advisory Bouncy Footer */}
-      <footer className="bg-white py-6 text-xs text-slate-600 mt-auto border-t-3 border-emerald-100 shadow-[0_-4px_16px_rgba(16,80,48,0.04)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-semibold">
-          <div className="flex items-center gap-2 text-emerald-800">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 animate-bounce" />
-            <span>
-              Agricultural Extension Diagnostic Standard • Plant Pathology & Crop Protection
-            </span>
-          </div>
+      {/* Website Footer */}
+      <Footer
+        onNavigate={handleTabChange}
+        onOpenConsultation={() => setIsConsultModalOpen(true)}
+      />
 
-          <div className="text-center sm:text-right text-slate-500">
-            <span>
-              Always verify chemical labels & consult local agricultural extension officers before pesticide spraying.
-            </span>
-          </div>
-        </div>
-      </footer>
+      {/* Agronomist Consultation Modal */}
+      <AgronomistConsultModal
+        isOpen={isConsultModalOpen}
+        onClose={() => setIsConsultModalOpen(false)}
+        onNavigateToScanner={() => {
+          setIsConsultModalOpen(false);
+          handleTabChange('scanner');
+        }}
+      />
     </div>
   );
 }
